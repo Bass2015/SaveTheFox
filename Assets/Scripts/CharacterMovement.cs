@@ -5,22 +5,15 @@ using UnityEngine;
 
 public class CharacterMovement : MonoBehaviour
 {
-    [SerializeField] protected List<BoardTile> tilesPath;
-    protected Coroutine highlighting;
+   
+   
     public float timeBetweenTiles;
+    protected List<Vector3> tilePositions = new List<Vector3>();
 
-    List<Vector3> tilePositions;
     // Start is called before the first frame update
     void Start()
     {
-        tilePositions = new List<Vector3>();
-        if (tilesPath != null && tilesPath.Count > 0)
-        {
-            foreach (var tile in tilesPath)
-            {
-                tilePositions.Add(tile.transform.position);
-            } 
-        }
+
     }
 
     // Update is called once per frame
@@ -29,11 +22,8 @@ public class CharacterMovement : MonoBehaviour
        
     }
 
-    
-
-    private void Walk()
+    protected virtual void Walk()
     {
-        StopCoroutine(highlighting);
         StartCoroutine("WalkCoroutine");
     }
 
@@ -44,30 +34,7 @@ public class CharacterMovement : MonoBehaviour
             yield return StartCoroutine("MoveToTile", tilePos);
         }
     }
-    private void HighlightPath()
-    {
-        if (tilesPath != null && tilesPath.Count > 0)
-        {
-            highlighting = StartCoroutine("HighlightCo"); 
-        }
-    }
-
-    IEnumerator HighlightCo()
-    {
-        while (true)
-        {
-            foreach (var tile in tilesPath)
-            {
-                tile.Highlight();
-                yield return new WaitForSeconds(0.25f);
-            }
-            foreach (var tile in tilesPath)
-            {
-                tile.Highlight();
-            }
-            yield return new WaitForSeconds(0.25f);
-        }
-    }
+   
     IEnumerator MoveToTile(Vector3 nextTile)
     {
         float percentage = 0;
@@ -85,15 +52,14 @@ public class CharacterMovement : MonoBehaviour
     private void OnEnable()
     {
         EventsManager.OnRunButton += Walk;
-        EventsManager.OnGameStarted += HighlightPath;
+    
 
     }
 
     private void OnDisable()
     {
         EventsManager.OnRunButton -= Walk;
-        EventsManager.OnGameStarted -= HighlightPath;
-
+       
     }
 
     float EaseInOut(float x)
