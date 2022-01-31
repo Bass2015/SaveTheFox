@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,9 @@ public class Fox : CharacterMovement
     // Start is called before the first frame update
     void Start()
     {
+        _collider = GetComponent<Collider>();
         lastPosition = transform.position;
+        startPosition = transform.position;
     }
 
     // Update is called once per frame
@@ -21,7 +24,6 @@ public class Fox : CharacterMovement
 
     void FillPositionsList()
     {
-        
         tilePositions.Add(lastPosition);
         foreach (var command in commands)
         {
@@ -33,7 +35,31 @@ public class Fox : CharacterMovement
     protected override void Walk()
     {
         FillPositionsList();
-        base.Walk();
+        walkingCoroutine = StartCoroutine("WalkCoroutine");
+       // base.Walk();
+    }
+    protected  IEnumerator WalkCoroutine()
+    {
+        foreach (var tilePos in tilePositions)
+        {
+            CheckNextTile(tilePos - transform.position);
+            yield return StartCoroutine("MoveToTile", tilePos);
+        }
+    }
+
+    protected void CheckNextTile(Vector3 direction)
+    {
+        RaycastHit hit;
+        _collider.enabled = false;
+        Ray ray = new Ray(transform.position, direction);
+        if (Physics.Raycast(ray, out hit, 2.5f))
+        {
+            if (hit.collider.CompareTag("Obstacle"))
+            {
+                EventsManager.PlayerPushing(hit.collider.gameObject, direction);
+            }
+        }
+        _collider.enabled = true;
     }
 
     void AddForwardCommand()
@@ -49,12 +75,22 @@ public class Fox : CharacterMovement
         commands.Add(new MoveLeft());
     }
 
+    protected override void OnReset()
+    {
+        commands.Clear();
+        tilePositions.Clear();
+        lastPosition = startPosition;
+        base.OnReset();
+    }
+
     private void OnEnable()
     {
         EventsManager.OnForwardArrowTap += AddForwardCommand;
         EventsManager.OnRightArrowTap += AddRightCommand;
         EventsManager.OnLeftArrowTap += AddLeftCommand;
         EventsManager.OnRunButton += Walk;
+        EventsManager.OnResetButton += OnReset;
+
     }
     private void OnDisable()
     {
@@ -62,5 +98,13 @@ public class Fox : CharacterMovement
         EventsManager.OnRightArrowTap -= AddRightCommand;
         EventsManager.OnLeftArrowTap -= AddLeftCommand;
         EventsManager.OnRunButton -= Walk;
+        EventsManager.OnResetButton -= OnReset;
+
+    }
+
+    protected override void InteractWithObstacle(GameObject obstacle, Vector3 direction)
+    {
+        print("InteractingFox");
+        EventsManager.PlayerPushing(obstacle, direction);
     }
 }
